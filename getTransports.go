@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/OpenTransports/lib-go/models"
 	"github.com/go-siris/siris/context"
 )
 
@@ -26,7 +27,7 @@ func GetTransports(ctx context.Context) {
 	longitude, _ := strconv.ParseFloat(ctx.FormValue("longitude"), 64)
 	radius, errRadius := strconv.ParseFloat(ctx.FormValue("radius"), 64)
 	// Create a Position object
-	position := &position{
+	position := models.Position{
 		Latitude:  latitude,
 		Longitude: longitude,
 	}
@@ -50,7 +51,7 @@ func GetTransports(ctx context.Context) {
 // Fetch the nearby transports from the HSL server
 // https://digitransit.fi/en
 // http://dev.hsl.fi/graphql/console
-func fetchStops(userPosition *position, radius float64) ([]transport, error) {
+func fetchStops(userPosition models.Position, radius float64) ([]models.Transport, error) {
 	// Build query and make request
 	query := fmt.Sprintf(queryTemplate, userPosition.Latitude, userPosition.Longitude, radius)
 	const URL = "http://api.digitransit.fi/routing/v1/routers/finland/index/graphql"
@@ -94,22 +95,22 @@ func fetchStops(userPosition *position, radius float64) ([]transport, error) {
 }
 
 // 1. Flatten the answer and map to transports structs
-func mapStops(answer *answerType) []transport {
-	stops := []transport{}
+func mapStops(answer *answerType) []models.Transport {
+	stops := []models.Transport{}
 	for _, e := range answer.Data.Nearest.Edges {
 		t := e.Node.Place
 		for _, time := range t.Times {
-			stops = append(stops, transport{
+			stops = append(stops, models.Transport{
 				ID:   t.ID,
 				Name: t.Name,
 				Line: time.Trip.Route.Name,
 				Type: modeToType(time.Trip.Route.Mode),
-				Position: position{
+				Position: models.Position{
 					Latitude:  t.Latitude,
 					Longitude: t.Longitude,
 				},
-				Passages: []*passage{
-					&passage{
+				Passages: []models.Passage{
+					models.Passage{
 						Direction: time.Trip.Direction,
 						Times:     []string{absoluteDateToRelativeDate(time.Date)},
 					},
@@ -121,8 +122,8 @@ func mapStops(answer *answerType) []transport {
 }
 
 // 2. Merge stops with the same Name and Line
-func reduceStops(stops []transport) []transport {
-	reducedStops := []transport{}
+func reduceStops(stops []models.Transport) []models.Transport {
+	reducedStops := []models.Transport{}
 	for _, stop1 := range stops {
 		added := false
 		for _, stop2 := range reducedStops {
@@ -138,7 +139,7 @@ func reduceStops(stops []transport) []transport {
 	return reducedStops
 }
 
-func mergePassages(passages1 []*passage, passages2 []*passage) []*passage {
+func mergePassages(passages1 []models.Passage, passages2 []models.Passage) []models.Passage {
 	for _, p1 := range passages1 {
 		added := false
 		for _, p2 := range passages2 {
@@ -157,8 +158,8 @@ func mergePassages(passages1 []*passage, passages2 []*passage) []*passage {
 }
 
 // 3. Filter out furthest transports for each lines
-func filterStops(stops []transport, userPosition *position) []transport {
-	filterdStops := []transport{}
+func filterStops(stops []models.Transport, userPosition models.Position) []models.Transport {
+	filterdStops := []models.Transport{}
 	for _, stop1 := range stops {
 		added := false
 		for i, stop2 := range filterdStops {
@@ -188,8 +189,8 @@ func absoluteDateToRelativeDate(date int) string {
 func modeToType(mode string) int {
 	switch mode {
 	case "TRAM":
-		return tram
+		return models.Tram
 	default:
-		return unknown
+		return models.Unknown
 	}
 }
