@@ -17,6 +17,12 @@
 			"revisionTime": "2017-06-23T13:13:27Z"
 		},
 		{
+			"checksumSHA1": "xy/GwZ87actRGzI6qxkrqkcJ1C0=",
+			"path": "github.com/OpenTransports/lib-go/models",
+			"revision": "72588723306293077c921a22c246c8e22d46d3b6",
+			"revisionTime": "2017-08-18T15:32:30Z"
+		},
+		{
 			"checksumSHA1": "E2Jd7wdGSPCS9Ckop48GXwhpM3Q=",
 			"origin": "github.com/go-siris/siris/vendor/github.com/aymerick/raymond",
 			"path": "github.com/aymerick/raymond",
@@ -290,6 +296,30 @@
 			"path": "github.com/satori/go.uuid",
 			"revision": "70297c130d1b8bfbd4b8b4cf49538fd121a3316b",
 			"revisionTime": "2017-06-23T13:13:27Z"
+		},
+		{
+			"checksumSHA1": "ZizcwHQ3rxK3k5dQdwk+3f/My9E=",
+			"path": "github.com/shurcooL/go/ctxhttp",
+			"revision": "b2ea7b593ffddfdfb43ab719c308c25cb2054db0",
+			"revisionTime": "2017-08-07T19:56:02Z"
+		},
+		{
+			"checksumSHA1": "EV7MtBnHXibWMg4clfY118168kM=",
+			"path": "github.com/shurcooL/graphql",
+			"revision": "52ce28a2c9fdfbdb3377232422c7915fa04b678a",
+			"revisionTime": "2017-07-25T16:20:00Z"
+		},
+		{
+			"checksumSHA1": "cBmux8EtRW7A/zcYHn4ABYWjA6U=",
+			"path": "github.com/shurcooL/graphql/ident",
+			"revision": "52ce28a2c9fdfbdb3377232422c7915fa04b678a",
+			"revisionTime": "2017-07-25T16:20:00Z"
+		},
+		{
+			"checksumSHA1": "lRm7JhQAe9p+ie6OIsT16O2HAQw=",
+			"path": "github.com/shurcooL/graphql/internal/jsonutil",
+			"revision": "52ce28a2c9fdfbdb3377232422c7915fa04b678a",
+			"revisionTime": "2017-07-25T16:20:00Z"
 		},
 		{
 			"checksumSHA1": "R/Mpe0uUp5HeqWrdrH5qE2qZuE8=",
