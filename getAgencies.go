@@ -19,29 +19,24 @@ var HSL = models.Agency{
 		Longitude: 24.945831,
 	},
 	Radius: 20000,
-	Types: []models.TransportType{
-		models.TransportType{
-			ID:   models.Tram,
+	Types: map[int]models.TransportType{
+		models.Tram: models.TransportType{
 			Name: models.TramString,
 			Icon: serverURL + "/medias/tram.png",
 		},
-		models.TransportType{
-			ID:   models.Metro,
+		models.Metro: models.TransportType{
 			Name: models.MetroString,
 			Icon: serverURL + "/medias/metro.png",
 		},
-		models.TransportType{
-			ID:   models.Rail,
+		models.Rail: models.TransportType{
 			Name: models.RailString,
 			Icon: serverURL + "/medias/train.png",
 		},
-		models.TransportType{
-			ID:   models.Bus,
+		models.Bus: models.TransportType{
 			Name: models.BusString,
 			Icon: serverURL + "/medias/bus.png",
 		},
-		models.TransportType{
-			ID:   models.Ferry,
+		models.Ferry: models.TransportType{
 			Name: models.FerryString,
 			Icon: serverURL + "/medias/ferry.png",
 		},
