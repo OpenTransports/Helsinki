@@ -8,17 +8,21 @@ import (
 )
 
 func TestTransports(t *testing.T) {
-	stops, err := fetchStops(models.Position{Latitude: 60.192059, Longitude: 24.945831}, 2000.)
+	transports, err := fetchTransports(
+		models.Position{
+			Latitude:  60.1665,
+			Longitude: 24.9679,
+		},
+		200.,
+	)
 
 	if err != nil {
 		fmt.Println(err)
 		t.Fail()
 	}
 
-	fmt.Println(len(stops))
-	for _, s := range stops {
-		for _, t := range s.Passages {
-			fmt.Println(t)
-		}
+	fmt.Println(len(transports))
+	for _, trans := range transports {
+		fmt.Println(trans)
 	}
 }

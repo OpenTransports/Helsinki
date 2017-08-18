@@ -1,16 +1,14 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/OpenTransports/lib-go/models"
-	"github.com/go-siris/siris/context"
+	irisContext "github.com/go-siris/siris/context"
+	"github.com/shurcooL/graphql"
 )
 
 // GetTransports - /transports?latitude=...&longitude=...&radius=...
@@ -18,7 +16,7 @@ import (
 // @formParam latitude : optional, the latitude around where to search, default is 0
 // @formParam longitude : optional, the longitude around where to search, default is 0
 // @formParam radius : optional, default is 200m
-func GetTransports(ctx context.Context) {
+func GetTransports(ctx irisContext.Context) {
 	ctx.Header("Access-Control-Allow-Origin", "*")
 	// Get position in params
 	// Parse them to floats
@@ -36,12 +34,12 @@ func GetTransports(ctx context.Context) {
 		radius = 200.0
 	}
 	// Make query
-	stops, err := fetchStops(position, radius)
+	transports, err := fetchTransports(position, radius)
 	if err != nil {
 		ctx.Application().Log("Error making query answer in /transports\n	==> %v", err)
 	}
 	// Write results
-	_, err = ctx.JSON(stops)
+	_, err = ctx.JSON(transports)
 	// Log the error if any
 	if err != nil {
 		ctx.Application().Log("Error writting answer in /transports\n	==> %v", err)
@@ -51,130 +49,118 @@ func GetTransports(ctx context.Context) {
 // Fetch the nearby transports from the HSL server
 // https://digitransit.fi/en
 // http://dev.hsl.fi/graphql/console
-func fetchStops(userPosition models.Position, radius float64) ([]models.Transport, error) {
-	// Build query and make request
-	query := fmt.Sprintf(queryTemplate, userPosition.Latitude, userPosition.Longitude, radius)
-	const URL = "http://api.digitransit.fi/routing/v1/routers/finland/index/graphql"
-	req, err := http.NewRequest("POST", URL, bytes.NewBuffer([]byte(query)))
-	if err != nil {
-		return nil, err
+var client = graphql.NewClient("http://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", nil, nil)
+
+func fetchTransports(userPosition models.Position, radius float64) ([]models.Transport, error) {
+	// Make query
+	answer := &queryStruct{}
+	variables := map[string]interface{}{
+		"lat":    graphql.Float(userPosition.Latitude),
+		"lon":    graphql.Float(userPosition.Longitude),
+		"radius": graphql.Int(radius),
 	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	err := client.Query(context.Background(), answer, variables)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	// Parse answer and put it in a struct
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	answer := &answerType{}
-	err = json.Unmarshal(body, answer)
-	if err != nil {
-		return nil, err
+		fmt.Println(err)
 	}
 	// Map anwer to a curated array of nearby transports
 	// The answer is not currectly structured
-	// A stop (node) containes all the futur passage for each line
+	// A transport (node) containes all the futur passage for each line
 	// We need to flatten the answer, then merge what can be merged and remove what is useless
 	// 3. Filter out furthest transports for each lines
-	fmt.Println(len(reduceStops(
-		// 1. Flatten the answer and map to transports structs
-		mapStops(answer),
-	)))
-	return filterStops(
-		// 2. Merge stops with the same Name and Line
-		reduceStops(
+	return filterDistantTransports(
+		// 2. Merge transports with the same Name and Line
+		reduceTransports(
 			// 1. Flatten the answer and map to transports structs
-			mapStops(answer),
+			mapToTransports(answer),
 		),
 		userPosition,
 	), nil
 }
 
 // 1. Flatten the answer and map to transports structs
-func mapStops(answer *answerType) []models.Transport {
-	stops := []models.Transport{}
-	for _, e := range answer.Data.Nearest.Edges {
-		t := e.Node.Place
-		for _, time := range t.Times {
-			stops = append(stops, models.Transport{
-				ID:   t.ID,
-				Name: t.Name,
-				Line: time.Trip.Route.Name,
-				Type: modeToType(time.Trip.Route.Mode),
+func mapToTransports(answer *queryStruct) []models.Transport {
+	transports := []models.Transport{}
+	for _, e := range answer.Nearest.Edges {
+		stop := e.Node.Stop
+		for _, passage := range stop.StoptimesWithoutPatterns {
+			transports = append(transports, models.Transport{
+				ID:   stop.ID,
+				Name: stop.Name,
+				Line: passage.Trip.Route.ShortName,
+				Type: modeToType(passage.Trip.Route.Mode),
 				Position: models.Position{
-					Latitude:  t.Latitude,
-					Longitude: t.Longitude,
+					Latitude:  stop.Lat,
+					Longitude: stop.Lon,
 				},
-				Passages: []models.Passage{
-					models.Passage{
-						Direction: time.Trip.Direction,
-						Times:     []string{absoluteDateToRelativeDate(time.Date)},
+				Informations: []models.Information{
+					models.Information{
+						Title:     passage.Trip.TripHeadsign,
+						Content:   []string{absoluteDateToRelativeDate(passage.RealtimeDeparture)},
+						Timestamp: int(time.Now().Unix() * 1000),
 					},
 				},
 			})
 		}
 	}
-	return stops
+	return transports
 }
 
-// 2. Merge stops with the same Name and Line
-func reduceStops(stops []models.Transport) []models.Transport {
-	reducedStops := []models.Transport{}
-	for _, stop1 := range stops {
+// 2. Merge transport with the same Name and Line
+func reduceTransports(transports []models.Transport) []models.Transport {
+	reducedTransports := []models.Transport{}
+	for _, transport1 := range transports {
 		added := false
-		for _, stop2 := range reducedStops {
-			if stop1.Name == stop2.Name && stop1.Line == stop2.Line {
+		for i, transport2 := range reducedTransports {
+			if transport1.Name == transport2.Name && transport1.Line == transport2.Line {
 				added = true
-				stop2.Passages = mergePassages(stop1.Passages, stop2.Passages)
+				reducedTransports[i].Informations = mergeInformations(transport1.Informations, transport2.Informations)
 			}
 		}
 		if !added {
-			reducedStops = append(reducedStops, stop1)
+			reducedTransports = append(reducedTransports, transport1)
 		}
 	}
-	return reducedStops
+	return reducedTransports
 }
 
-func mergePassages(passages1 []models.Passage, passages2 []models.Passage) []models.Passage {
-	for _, p1 := range passages1 {
+// Merge Informations into informations1
+func mergeInformations(informations1 []models.Information, informations2 []models.Information) []models.Information {
+	for _, info2 := range informations2 {
 		added := false
-		for _, p2 := range passages2 {
-			if p1.Direction == p2.Direction {
-				p2.Times = append(p2.Times, p1.Times...)
+		for i, info1 := range informations1 {
+			if info1.Title == info2.Title {
+				informations1[i].Content = append(info1.Content, info2.Content...)
 				added = true
 				break
 			}
 		}
 		if !added {
-			passages2 = append(passages2, p1)
+			informations1 = append(informations1, info2)
 		}
 	}
 
-	return passages2
+	return informations1
 }
 
 // 3. Filter out furthest transports for each lines
-func filterStops(stops []models.Transport, userPosition models.Position) []models.Transport {
-	filterdStops := []models.Transport{}
-	for _, stop1 := range stops {
+func filterDistantTransports(transports []models.Transport, userPosition models.Position) []models.Transport {
+	filterdTransports := []models.Transport{}
+	for _, transport1 := range transports {
 		added := false
-		for i, stop2 := range filterdStops {
-			if stop1.Line == stop2.Line {
-				if stop1.Position.DistanceFrom(userPosition) < stop2.Position.DistanceFrom(userPosition) {
-					filterdStops[i] = stop1
+		for i, transport2 := range filterdTransports {
+			if transport1.Line == transport2.Line {
+				if transport1.Position.DistanceFrom(userPosition) < transport2.Position.DistanceFrom(userPosition) {
+					filterdTransports[i] = transport1
 				}
 				added = true
 			}
 		}
 		if !added {
-			filterdStops = append(filterdStops, stop1)
+			filterdTransports = append(filterdTransports, transport1)
 		}
 	}
-	return filterdStops
+	return filterdTransports
 }
 
 // From a date (int) representing the number of seconds since midnight,

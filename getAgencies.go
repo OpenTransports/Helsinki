@@ -1,31 +1,50 @@
 package main
 
 import (
+	"os"
+
 	"github.com/OpenTransports/lib-go/models"
 	"github.com/go-siris/siris/context"
 )
 
+var serverURL = os.Getenv("SERVER_URL")
+
 // HSL agency description
 var HSL = models.Agency{
-	ID:     "Finland.Helsinki.HSL",
-	Name:   "HSL",
-	URL:    "https://hsl.fi",
-	Git:    "https://github.com/OpenTransports/Helsinki",
-	Center: models.Position{Latitude: 60.192059, Longitude: 24.945831},
-	Radius: 20000,
-	Types: []int{
-		models.Tram,
-		models.Metro,
-		models.Rail,
-		models.Bus,
-		models.Ferry,
+	ID:   "Finland.Helsinki.HSL",
+	Name: "HSL",
+	URL:  "https://hsl.fi",
+	Center: models.Position{
+		Latitude:  60.192059,
+		Longitude: 24.945831,
 	},
-	TypesString: []string{
-		models.TramString,
-		models.MetroString,
-		models.RailString,
-		models.BusString,
-		models.FerryString,
+	Radius: 20000,
+	Types: []models.TransportType{
+		models.TransportType{
+			ID:   models.Tram,
+			Name: models.TramString,
+			Icon: serverURL + "/medias/tram.png",
+		},
+		models.TransportType{
+			ID:   models.Metro,
+			Name: models.MetroString,
+			Icon: serverURL + "/medias/metro.png",
+		},
+		models.TransportType{
+			ID:   models.Rail,
+			Name: models.RailString,
+			Icon: serverURL + "/medias/train.png",
+		},
+		models.TransportType{
+			ID:   models.Bus,
+			Name: models.BusString,
+			Icon: serverURL + "/medias/bus.png",
+		},
+		models.TransportType{
+			ID:   models.Ferry,
+			Name: models.FerryString,
+			Icon: serverURL + "/medias/ferry.png",
+		},
 	},
 }
 
