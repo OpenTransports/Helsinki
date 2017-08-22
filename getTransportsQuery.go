@@ -18,7 +18,7 @@ type queryStruct struct {
 							Route        struct {
 								LongName  string
 								ShortName string
-								Mode      string
+								Type      int
 							}
 						}
 					}

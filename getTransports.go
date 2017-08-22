@@ -89,7 +89,7 @@ func mapToTransports(answer *queryStruct) []models.Transport {
 				AgencyID: "Finland.Helsinki.HSL",
 				Name:     stop.Name,
 				Line:     passage.Trip.Route.ShortName,
-				Type:     modeToType(passage.Trip.Route.Mode),
+				Type:     passage.Trip.Route.Type,
 				Position: models.Position{
 					Latitude:  stop.Lat,
 					Longitude: stop.Lon,
@@ -169,15 +169,12 @@ func filterDistantTransports(transports []models.Transport, userPosition models.
 func absoluteDateToRelativeDate(date int) string {
 	now := time.Now()
 	nowSec := (now.Hour()*60 + now.Minute()) * 60
-	return fmt.Sprintf("%v mn", (date-nowSec)/60)
-}
-
-// Map the stringifyed transports type to our type
-func modeToType(mode string) int {
-	switch mode {
-	case "TRAM":
-		return models.Tram
-	default:
-		return models.Unknown
+	waitingTime := (date - nowSec) / 60
+	if waitingTime < 59 {
+		return fmt.Sprintf("%v mn", waitingTime)
 	}
+
+	hours := waitingTime / 60
+	minutes := waitingTime % 60
+	return fmt.Sprintf("%v h %v mn", hours, minutes)
 }
