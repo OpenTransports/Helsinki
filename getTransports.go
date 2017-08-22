@@ -85,7 +85,7 @@ func mapToTransports(answer *queryStruct) []models.Transport {
 		stop := e.Node.Stop
 		for _, passage := range stop.StoptimesWithoutPatterns {
 			transports = append(transports, models.Transport{
-				ID:   stop.ID,
+				ID:   stop.GtfsID,
 				Name: stop.Name,
 				Line: passage.Trip.Route.ShortName,
 				Type: modeToType(passage.Trip.Route.Mode),

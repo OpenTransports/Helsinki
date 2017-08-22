@@ -7,7 +7,7 @@ type queryStruct struct {
 		Edges []struct {
 			Node struct {
 				Stop struct {
-					ID                       string
+					GtfsID                   string
 					Name                     string
 					Lat                      float64
 					Lon                      float64
