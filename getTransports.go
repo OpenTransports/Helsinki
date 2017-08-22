@@ -87,7 +87,7 @@ func mapToTransports(answer *queryStruct) []models.Transport {
 			transports = append(transports, models.Transport{
 				ID:       stop.GtfsID,
 				AgencyID: "Finland.Helsinki.HSL",
-				Name:     passage.Trip.Route.ShortName + stop.Name,
+				Name:     passage.Trip.Route.ShortName + " - " + stop.Name,
 				Line:     passage.Trip.Route.ShortName,
 				Type:     modeToType(passage.Trip.Route.Mode),
 				Position: models.Position{
