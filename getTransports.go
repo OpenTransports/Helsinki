@@ -178,3 +178,19 @@ func absoluteDateToRelativeDate(date int) string {
 	minutes := waitingTime % 60
 	return fmt.Sprintf("%v h %v mn", hours, minutes)
 }
+func modeToType(mode string) int {
+	switch mode {
+	case "TRAM":
+		return models.Tram
+	case "BUS":
+		return models.Bus
+	case "SUBWAY":
+		return models.Metro
+	case "RAIL":
+		return models.Rail
+	case "FERRY":
+		return models.Ferry
+	default:
+		return models.Unknown
+	}
+}
