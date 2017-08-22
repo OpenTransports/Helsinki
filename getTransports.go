@@ -87,9 +87,9 @@ func mapToTransports(answer *queryStruct) []models.Transport {
 			transports = append(transports, models.Transport{
 				ID:       stop.GtfsID,
 				AgencyID: "Finland.Helsinki.HSL",
-				Name:     stop.Name,
+				Name:     passage.Trip.Route.ShortName + stop.Name,
 				Line:     passage.Trip.Route.ShortName,
-				Type:     passage.Trip.Route.Type,
+				Type:     modeToType(passage.Trip.Route.Mode),
 				Position: models.Position{
 					Latitude:  stop.Lat,
 					Longitude: stop.Lon,
@@ -167,8 +167,10 @@ func filterDistantTransports(transports []models.Transport, userPosition models.
 // From a date (int) representing the number of seconds since midnight,
 // return the number of minute between now and the date
 func absoluteDateToRelativeDate(date int) string {
+	_, localOffset := time.Now().Zone()
+	helsinkiOffset := 60 * 60 * 3
 	now := time.Now()
-	nowSec := (now.Hour()*60 + now.Minute()) * 60
+	nowSec := (now.Hour()*60+now.Minute())*60 + (helsinkiOffset - localOffset)
 	waitingTime := (date - nowSec) / 60
 	if waitingTime < 59 {
 		return fmt.Sprintf("%v mn", waitingTime)
@@ -178,6 +180,7 @@ func absoluteDateToRelativeDate(date int) string {
 	minutes := waitingTime % 60
 	return fmt.Sprintf("%v h %v mn", hours, minutes)
 }
+
 func modeToType(mode string) int {
 	switch mode {
 	case "TRAM":
