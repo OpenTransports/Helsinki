@@ -115,7 +115,7 @@ func reduceTransports(transports []models.Transport) []models.Transport {
 		for i, transport2 := range reducedTransports {
 			if transport1.Name == transport2.Name && transport1.Line == transport2.Line {
 				added = true
-				reducedTransports[i].Informations = mergeInformations(transport1.Informations, transport2.Informations)
+				reducedTransports[i].Informations = mergeInformations(transport2.Informations, transport1.Informations)
 			}
 		}
 		if !added {
