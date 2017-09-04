@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenTransports server for Helsinki
+After=network.target
+
+[Service]
+Type=simple
+User=opentransports
+WorkingDirectory=/home/admin
+ExecStart=/home/admin/go/bin/Helsinki
+Restart=on-abort
+
+Environment=PORT=56787
+Environment=SERVER_URL=https://artonge.duckdns.org/opentransports-helsinki
+
+[Install]
+WantedBy=multi-user.target
